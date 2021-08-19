@@ -445,12 +445,9 @@
 </style>
 
 <script>
-// import axios from "axios";
+import axios from 'axios';
 
-// const baseURL =
-// 	process.env.NODE_ENV === "development"
-// 		? "//localhost:3000/photos/"
-// 		: "photos/";
+const baseURL = process.env.NODE_ENV === 'development' ? '//localhost:3000/guests/' : 'api.php';
 
 export default {
 	data() {
@@ -490,13 +487,18 @@ export default {
 				activeCameraID: '',
 				activeCameraIndex: 0,
 				photo: '',
-				photoID: 0,
+				photoID: '',
+				photoIndex: 0,
 				context: '',
 				constraints: {
 					facingMode: this.facingMode,
 				},
 				timerEnabled: false,
 				timerActive: false,
+				photoToSend: {
+					name: '',
+					data: '',
+				},
 			};
 		},
 		browserDetect() {
@@ -622,11 +624,13 @@ export default {
 
 			img2.src = this.photo;
 			img2.classList.add('photo', 'gallery-photo');
-			img2.setAttribute('photo-id', this.photoID);
-			img2.setAttribute('onclick', 'viewPhoto(' + this.photoID + ')');
+			img2.setAttribute('photo-index', this.photoIndex);
+			img2.setAttribute('onclick', 'viewPhoto(' + this.photoIndex + ')');
 			this.ga.prepend(img2);
 
-			this.photoID++;
+			this.photoIndex++;
+
+			// put it in a form and send it
 
 			// axios
 			// 	.post(`${baseURL}`, this.photo)
@@ -636,6 +640,26 @@ export default {
 			// 	.catch((error) => {
 			// 		console.log(error);
 			// 	});
+
+			this.canvas.toBlob(
+				function(blob) {
+					const photoID = (Math.random() + 1).toString(36).substring(2);
+					console.log(photoID);
+					const formData = new FormData();
+					formData.append('sendimage', blob, photoID + '.jpg');
+					axios
+						.post(`${baseURL}`, formData, {
+							headers: {
+								'Content-Type': 'multipart/form-data',
+							},
+						})
+						.then((res) => {
+							console.log(res);
+						});
+				},
+				'image/jpeg',
+				0.5
+			);
 		},
 		shutterHandler() {
 			if (this.timerEnabled && !this.timerActive) {

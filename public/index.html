@@ -11,9 +11,9 @@
 		<meta name="apple-mobile-web-app-title" content="Steve Cam" />
 		<meta name="theme-color" content="#222222" />
 		<script type="text/javascript">
-			function viewPhoto(id) {
+			function viewPhoto(i) {
 				var allPhotos = document.getElementsByClassName('gallery-photo');
-				var photo = document.querySelector('[photo-id="' + id + '"]');
+				var photo = document.querySelector('[photo-index="' + i + '"]');
 				var photoSrc = photo.src;
 
 				allPhotos.forEach((i) => {
@@ -22,7 +22,6 @@
 				photo.classList.add('active');
 				document.getElementById('photo-viewer-img').setAttribute('src', photoSrc);
 				document.getElementById('camera').classList.add('photo-viewer-active');
-				// document.getElementById('controls').classList.add('photo-viewer-active');
 			}
 			function dismissViewer() {
 				document.getElementById('camera').classList.remove('photo-viewer-active');

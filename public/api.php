@@ -1,101 +1,75 @@
 <?php
 
-// header('Access-Control-Allow-Origin: *');
+header("Content-Type: application/json");
+header("Access-Control-Allow-Origin: *");
+header("Access-Control-Allow-Methods: POST");
+header("Access-Control-Allow-Headers: Access-Control-Allow-Headers,Content-Type,Access-Control-Allow-Methods, Authorization");
 
-$servername = "localhost";
-$username = "stevedia_rsvp";
-$password = "gyp!WyNREk*dB2J2";
-$dbname = "stevedia_rsvp";
+$DBhost = "localhost";
+$DBuser = "stevedia_p";
+$DBpassword = "2=]yuT~.d6u8";
+$DBname = "stevedia_p";
 
-$conn = new mysqli($servername, $username, $password, $dbname);
+$conn = mysqli_connect($DBhost, $DBuser, $DBpassword, $DBname); 
 
-if ($conn->connect_error) {
-	die("Connection failed: " . $conn->connect_error);
+if(!$conn){
+	die("Connection failed: " . mysqli_connect_error());
 }
 
-$method = $_SERVER['REQUEST_METHOD'];
-
-if ($method === 'GET') {
-
-	header("Content-Type:application/json");
-
-	if (isset($_GET['id']) && $_GET['id']!="") {
-
-		$id = $_GET['id'];
+$data = json_decode(file_get_contents("php://input"), true); // collect input parameters and convert into readable format
+	
+$fileName  =  $_FILES['sendimage']['name'];
+$tempPath  =  $_FILES['sendimage']['tmp_name'];
+$fileSize  =  $_FILES['sendimage']['size'];
 		
-		$sql = "SELECT * FROM guests WHERE id=?";
-		$stmt = $conn->prepare($sql); 
-		$stmt->bind_param("i", $id);
-		$stmt->execute();
-
-		$result = $stmt->get_result();
-
-		if (mysqli_num_rows($result) > 0) {
-			$row = mysqli_fetch_assoc($result);
-
-			echo json_encode($row);
-
+if(empty($fileName))
+{
+	$errorMSG = json_encode(array("message" => "please select image", "status" => false));	
+	echo $errorMSG;
+}
+else
+{
+	$upload_path = 'upload/'; // set upload folder path 
+	
+	$fileExt = strtolower(pathinfo($fileName,PATHINFO_EXTENSION)); // get image extension
+		
+	// valid image extensions
+	$valid_extensions = array('jpeg', 'jpg', 'png', 'gif'); 
+					
+	// allow valid image file formats
+	if(in_array($fileExt, $valid_extensions))
+	{				
+		//check file not exist our upload folder path
+		if(!file_exists($upload_path . $fileName))
+		{
+			// check file size '5MB'
+			if($fileSize < 5000000){
+				move_uploaded_file($tempPath, $upload_path . $fileName); // move file from system temporary path to our upload folder path 
+			}
+			else{		
+				$errorMSG = json_encode(array("message" => "Sorry, your file is too large, please upload 5 MB size", "status" => false));	
+				echo $errorMSG;
+			}
 		}
-		else {
-			http_response_code(404);
+		else
+		{		
+			$errorMSG = json_encode(array("message" => "Sorry, file already exists check upload folder", "status" => false));	
+			echo $errorMSG;
 		}
-
-		$stmt->close();
-
 	}
-	else {
-		http_response_code(400);
-	}
-}
-
-else if ($method === 'PUT') {
-
-	header("Content-Type:application/json");
-
-	$data = json_decode(file_get_contents("php://input"), true);
-
-	if ($data["id"]!="") {
-
-		$sql = "UPDATE guests SET email = ?, guest1FirstName = ?, guest1LastName = ?, guest1Meal = ?, guest1DietaryNotes = ?, guest1AlcoholPref = ? WHERE id=?";
-		$stmt = $conn->prepare($sql);
-		$stmt->bind_param("ssssssi", $data["email"], $data["guest1FirstName"], $data["guest1LastName"], $data["guest1Meal"], $data["guest1DietaryNotes"], $data["guest1AlcoholPref"], $data["id"]);
-
-		$stmt->execute();
-
-		$stmt->close();
-
-		echo json_encode($data);
-
-	}
-	else {
-		http_response_code(400);
+	else
+	{		
+		$errorMSG = json_encode(array("message" => "Sorry, only JPG, JPEG, PNG & GIF files are allowed", "status" => false));	
+		echo $errorMSG;		
 	}
 }
-
-else if ($method === 'POST') {
-
-	header("Content-Type:application/json");
-
-	$data = json_decode(file_get_contents("php://input"), true);
-
-	if ($data["name"]!="" && $data["email"]!="" && $data["location"]!="") {
-
-		$sql = "INSERT INTO guestCollect (name, email, location) VALUES (?, ?, ?)";
-		$stmt = $conn->prepare($sql);
-		$stmt->bind_param("sss", $data["name"], $data["email"], $data["location"]);
-
-		$stmt->execute();
-
-		$stmt->close();
-
-		echo json_encode($data);
-
-	}
-	else {
-		http_response_code(400);
-	}
+		
+// if no error caused, continue ....
+if(!isset($errorMSG))
+{
+	$query = mysqli_query($conn,'INSERT into tbl_image (name) VALUES("'.$fileName.'")');
+			
+	echo json_encode(array("message" => "Image Uploaded Successfully", "status" => true));	
 }
-
-$conn->close();
 
 ?>
