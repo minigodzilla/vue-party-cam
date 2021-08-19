@@ -447,7 +447,7 @@
 <script>
 import axios from 'axios';
 
-const baseURL = process.env.NODE_ENV === 'development' ? '//localhost:3000/guests/' : 'api.php';
+const baseURL = process.env.NODE_ENV === 'development' ? 'http://localhost:3000/photos/' : 'api.php';
 
 export default {
 	data() {
