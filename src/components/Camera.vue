@@ -5,6 +5,11 @@
 			<div id="sizing-box">
 				<video id="player" muted playsinline></video>
 				<img id="timer-display" v-show="this.timerActive" src="" />
+				<div id="flash-slide"></div>
+				<div id="photo-viewer">
+					<img id="photo-viewer-img" src="" />
+					<div id="close-btn" onclick="dismissViewer()"></div>
+				</div>
 			</div>
 		</div>
 		<div id="controls">
@@ -18,6 +23,7 @@
 				Change Camera
 			</div>
 		</div>
+		<div id="photo-viewer-overlay" onclick="dismissViewer()"></div>
 	</div>
 	<canvas id="canvas" width="768" height="1024"></canvas>
 </template>
@@ -103,7 +109,7 @@
 			}
 		}
 
-		.photo {
+		#flash-slide .photo {
 			position: absolute;
 			z-index: 3;
 			top: 0;
@@ -114,16 +120,48 @@
 			animation-timing-function: ease;
 			animation-fill-mode: both;
 		}
+		#photo-viewer {
+			position: absolute;
+			z-index: 5;
+			top: 0;
+			right: 0;
+			bottom: 0;
+			left: 0;
+			overflow: hidden;
+			pointer-events: none;
+			transition: clip-path 200ms ease;
+			background-color: #000;
+			box-shadow: 1em 1em 0 black;
+
+			#photo-viewer-img {
+				width: 100%;
+				height: 100%;
+				mask-image: radial-gradient(circle, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0.8) 15%, rgba(0, 0, 0, 0.5) 100%);
+				object-fit: contain;
+				object-position: 50% 50%;
+			}
+
+			#close-btn {
+				position: absolute;
+				top: 1em;
+				right: 1em;
+				width: 2.5em;
+				height: 2.5em;
+				background-image: url(/assets/close-btn.png);
+				background-size: cover;
+			}
+		}
 	}
 
 	#gallery {
+		z-index: 1;
 		flex-grow: 0;
 		flex-shrink: 0;
 		align-self: stretch;
 		display: flex;
 		align-items: stretch;
 		overflow: hidden;
-		padding: 6.25vh 3.125vw;
+		background-attachment: local;
 
 		.photo {
 			object-fit: cover;
@@ -135,6 +173,7 @@
 			animation-duration: 0.5s;
 			animation-timing-function: ease;
 			animation-fill-mode: both;
+			transition: opacity 200ms ease;
 		}
 	}
 
@@ -171,6 +210,36 @@
 		}
 	}
 
+	#photo-viewer-overlay {
+		position: absolute;
+		background-color: rgba(0, 0, 0, 0.5);
+		top: 0;
+		left: 0;
+		width: 200%;
+		height: 200%;
+		opacity: 0;
+		pointer-events: none;
+		transition: opacity 200ms ease;
+	}
+
+	&.photo-viewer-active {
+		#viewfinder #sizing-box #photo-viewer {
+			clip-path: inset(0% 0% 0% 0%) !important;
+			pointer-events: all;
+		}
+		#photo-viewer-overlay {
+			opacity: 1;
+			pointer-events: all;
+		}
+		#gallery .photo {
+			opacity: 0.5;
+
+			&.active {
+				opacity: 1;
+			}
+		}
+	}
+
 	&.portrait-primary {
 		flex-direction: column;
 
@@ -194,8 +263,11 @@
 					width: auto;
 					height: 18.75%;
 				}
-				.photo {
+				#flash-slide .photo {
 					animation-name: flash, slide-left;
+				}
+				#photo-viewer {
+					clip-path: inset(0% 0% 100% 0%);
 				}
 			}
 		}
@@ -204,6 +276,11 @@
 			height: 20vw;
 			padding: 6.25vw;
 			overflow-x: auto;
+			background-image: url('/assets/film-portrait.png');
+			background-size: auto 80%;
+			background-position: 0 50%;
+			background-repeat: repeat-x;
+			margin: 1vw 0 2.25vw 0;
 
 			.photo {
 				width: 16.66%;
@@ -270,8 +347,11 @@
 					height: auto;
 				}
 
-				.photo {
+				#flash-slide .photo {
 					animation-name: flash, slide-left;
+				}
+				#photo-viewer {
+					clip-path: inset(0% 100% 0% 0%);
 				}
 			}
 		}
@@ -281,6 +361,11 @@
 			padding: 6.25vh;
 			flex-direction: column;
 			overflow-y: auto;
+			background-image: url('/assets/film-landscape.png');
+			background-size: 80% auto;
+			background-position: 50% 0;
+			background-repeat: repeat-y;
+			margin: 0 1vw 0 2.25vw;
 
 			.photo {
 				height: 16.66%;
@@ -376,7 +461,9 @@ export default {
 		this.canvas = document.getElementById('canvas');
 		this.vf = document.getElementById('viewfinder');
 		this.sb = document.getElementById('sizing-box');
+		this.fs = document.getElementById('flash-slide');
 		this.ga = document.getElementById('gallery');
+		this.pv = document.getElementById('photo-viewer');
 		this.player = document.getElementById('player');
 		this.td = document.getElementById('timer-display');
 		this.constraints = {
@@ -403,6 +490,7 @@ export default {
 				activeCameraID: '',
 				activeCameraIndex: 0,
 				photo: '',
+				photoID: 0,
 				context: '',
 				constraints: {
 					facingMode: this.facingMode,
@@ -529,11 +617,16 @@ export default {
 
 			img.src = this.photo;
 			img.classList.add('photo');
-			this.sb.appendChild(img);
+			this.fs.innerHTML = '';
+			this.fs.appendChild(img);
 
 			img2.src = this.photo;
-			img2.classList.add('photo');
+			img2.classList.add('photo', 'gallery-photo');
+			img2.setAttribute('photo-id', this.photoID);
+			img2.setAttribute('onclick', 'viewPhoto(' + this.photoID + ')');
 			this.ga.prepend(img2);
+
+			this.photoID++;
 
 			// axios
 			// 	.post(`${baseURL}`, this.photo)

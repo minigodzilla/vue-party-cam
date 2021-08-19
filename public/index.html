@@ -5,22 +5,33 @@
 		<meta http-equiv="X-UA-Compatible" content="IE=edge" />
 		<link rel="icon" href="<%= BASE_URL %>favicon.png" />
 		<title>Camera</title>
-		<meta
-			name="viewport"
-			content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
-		/>
+		<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
 		<meta name="apple-mobile-web-app-status-bar-style" content="black" />
 		<meta name="apple-mobile-web-app-capable" content="yes" />
 		<meta name="apple-mobile-web-app-title" content="Steve Cam" />
 		<meta name="theme-color" content="#222222" />
+		<script type="text/javascript">
+			function viewPhoto(id) {
+				var allPhotos = document.getElementsByClassName('gallery-photo');
+				var photo = document.querySelector('[photo-id="' + id + '"]');
+				var photoSrc = photo.src;
+
+				allPhotos.forEach((i) => {
+					i.classList.remove('active');
+				});
+				photo.classList.add('active');
+				document.getElementById('photo-viewer-img').setAttribute('src', photoSrc);
+				document.getElementById('camera').classList.add('photo-viewer-active');
+				// document.getElementById('controls').classList.add('photo-viewer-active');
+			}
+			function dismissViewer() {
+				document.getElementById('camera').classList.remove('photo-viewer-active');
+			}
+		</script>
 	</head>
 	<body>
 		<noscript>
-			<strong
-				>We're sorry but <%= htmlWebpackPlugin.options.title %> doesn't work
-				properly without JavaScript enabled. Please enable it to
-				continue.</strong
-			>
+			<strong>We're sorry but <%= htmlWebpackPlugin.options.title %> doesn't work properly without JavaScript enabled. Please enable it to continue.</strong>
 		</noscript>
 		<div class="vignette"></div>
 		<div id="app" class="pointer-events-none"></div>
