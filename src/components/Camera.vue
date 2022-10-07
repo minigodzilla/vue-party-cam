@@ -240,7 +240,7 @@
 		}
 	}
 
-	&.portrait-primary {
+	&.portrait {
 		flex-direction: column;
 
 		#viewfinder {
@@ -323,7 +323,7 @@
 		}
 	}
 
-	&.landscape-primary {
+	&.landscape {
 		flex-direction: row;
 
 		#viewfinder {
@@ -428,14 +428,14 @@
 }
 
 // should target chrome only
-#camera.portrait-primary.not-chrome-ios {
+#camera.portrait.not-chrome-ios {
 	height: 100%;
 }
-#camera.landscape-primary.not-chrome-ios {
+#camera.landscape.not-chrome-ios {
 	height: 100vh;
 }
-#camera.portrait-primary.chrome-ios,
-#camera.landscape-primary.chrome-ios {
+#camera.portrait.chrome-ios,
+#camera.landscape.chrome-ios {
 	height: 100%;
 }
 
@@ -447,7 +447,7 @@
 <script>
 import axios from 'axios';
 
-const baseURL = process.env.NODE_ENV === 'development' ? 'http://localhost:3000/photos/' : 'api.php';
+const baseURL = 'https://p.jennandsteve.ca/api.php';
 
 export default {
 	data() {
@@ -455,6 +455,7 @@ export default {
 	},
 	mounted() {
 		// this.userAgent = navigator.userAgent;
+		this.userID = (Math.random() + 1).toString(36).substring(2);
 		this.canvas = document.getElementById('canvas');
 		this.vf = document.getElementById('viewfinder');
 		this.sb = document.getElementById('sizing-box');
@@ -479,9 +480,10 @@ export default {
 	methods: {
 		initialState() {
 			return {
+				userID: '',
 				userAgent: 'not-chrome-ios',
 				resized: false,
-				orientation: 'portrait-primary',
+				orientation: 'portrait',
 				cameras: [],
 				facingMode: 'environment',
 				activeCameraID: '',
@@ -514,11 +516,11 @@ export default {
 			this.resized = false;
 			// "orientation" check and resizing canvas accordingly
 			if (window.innerWidth < 568) {
-				this.orientation = 'portrait-primary';
+				this.orientation = 'portrait';
 				this.canvas.setAttribute('width', 768);
 				this.canvas.setAttribute('height', 1024);
 			} else {
-				this.orientation = 'landscape-primary';
+				this.orientation = 'landscape';
 				this.canvas.setAttribute('width', 1024);
 				this.canvas.setAttribute('height', 768);
 			}
@@ -526,7 +528,7 @@ export default {
 				// viewfinder resizing
 				const gaW = this.ga.clientWidth;
 				const gaH = this.ga.clientHeight;
-				if (this.orientation == 'portrait-primary') {
+				if (this.orientation == 'portrait') {
 					// 3:4 (portrait)
 					const vfW = this.vf.clientWidth - this.vf.clientWidth / 8;
 					const vfH = this.vf.clientHeight;
@@ -538,7 +540,7 @@ export default {
 						this.sb.style.width = vfW + 'px';
 						this.sb.style.height = (vfW / 3) * 4 + 'px';
 					}
-				} else if (this.orientation == 'landscape-primary') {
+				} else if (this.orientation == 'landscape') {
 					// 4:3 (landscape)
 					const vfW = this.vf.clientWidth;
 					const vfH = this.vf.clientHeight - this.vf.clientHeight / 8;
@@ -552,6 +554,7 @@ export default {
 					}
 				}
 			}, 500);
+			window.scrollTo(0, 0);
 		},
 		getCameras() {
 			navigator.mediaDevices
@@ -630,23 +633,17 @@ export default {
 
 			this.photoIndex++;
 
-			// put it in a form and send it
-
-			// axios
-			// 	.post(`${baseURL}`, this.photo)
-			// 	.then((response) => {
-			// 		console.log(response);
-			// 	})
-			// 	.catch((error) => {
-			// 		console.log(error);
-			// 	});
+			// put it in a blob, then a form, and send it
 
 			this.canvas.toBlob(
 				function(blob) {
-					const photoID = (Math.random() + 1).toString(36).substring(2);
-					console.log(photoID);
+					this.photoID = (Math.random() + 1).toString(36).substring(2);
+					console.log(this.photoID + ': ' + this.orientation);
 					const formData = new FormData();
-					formData.append('sendimage', blob, photoID + '.jpg');
+					formData.append('sendimage', blob, this.photoID + '.jpg');
+					formData.append('orientation', this.orientation);
+					formData.append('userID', this.userID);
+
 					axios
 						.post(`${baseURL}`, formData, {
 							headers: {
@@ -656,7 +653,7 @@ export default {
 						.then((res) => {
 							console.log(res);
 						});
-				},
+				}.bind(this),
 				'image/jpeg',
 				0.5
 			);

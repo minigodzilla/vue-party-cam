@@ -19,6 +19,7 @@ html {
 	height: 100%;
 	overflow: hidden;
 	touch-action: none;
+	scroll-behavior: smooth;
 }
 
 body {
